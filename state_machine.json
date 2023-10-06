@@ -1,0 +1,137 @@
+{
+  "Comment": "Migrates all Paddelbuch content from Hygraph to Contentful with schema evolution.",
+  "StartAt": "get_content_models_list",
+  "States": {
+    "get_content_models_list": {
+      "Type": "Task",
+      "Next": "dimension_tables_map",
+      "Parameters": {
+        "Name": "content_models_list"
+      },
+      "Resource": "arn:aws:states:::aws-sdk:ssm:getParameter",
+      "ResultSelector": {
+        "content_models_list.$": "States.StringToJson($.Parameter.Value)"
+      }
+    },
+    "dimension_tables_map": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "migrate_dimension_tables",
+        "States": {
+          "migrate_dimension_tables": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::glue:startJobRun.sync",
+            "Parameters": {
+              "JobName": "content_model_migration",
+              "Arguments": {
+                "--contentful_model_name.$": "$.content_model"
+              }
+            },
+            "ResultPath": "$.glue_job_run",
+            "End": true
+          }
+        }
+      },
+      "ItemsPath": "$.content_models_list.dimension_tables",
+      "ItemSelector": {
+        "content_model.$": "$$.Map.Item.Value"
+      },
+      "ResultPath": "$.glue_result",
+      "MaxConcurrency": 10,
+      "Next": "fact_tables_1_map"
+    },
+    "fact_tables_1_map": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "migrate_fact_tables_1",
+        "States": {
+          "migrate_fact_tables_1": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::glue:startJobRun.sync",
+            "Parameters": {
+              "JobName": "content_model_migration",
+              "Arguments": {
+                "--contentful_model_name.$": "$.content_model"
+              }
+            },
+            "ResultPath": "$.glue_job_run",
+            "End": true
+          }
+        }
+      },
+      "ItemsPath": "$.content_models_list.fact_tables_1",
+      "ItemSelector": {
+        "content_model.$": "$$.Map.Item.Value"
+      },
+      "ResultPath": "$.glue_result",
+      "MaxConcurrency": 10,
+      "Next": "fact_tables_2_map"
+    },
+    "fact_tables_2_map": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "migrate_fact_tables_2",
+        "States": {
+          "migrate_fact_tables_2": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::glue:startJobRun.sync",
+            "Parameters": {
+              "JobName": "content_model_migration",
+              "Arguments": {
+                "--contentful_model_name.$": "$.content_model"
+              }
+            },
+            "ResultPath": "$.glue_job_run",
+            "End": true
+          }
+        }
+      },
+      "ItemsPath": "$.content_models_list.fact_tables_2",
+      "ItemSelector": {
+        "content_model.$": "$$.Map.Item.Value"
+      },
+      "ResultPath": "$.glue_result",
+      "MaxConcurrency": 10,
+      "Next": "fact_tables_3_map"
+    },
+    "fact_tables_3_map": {
+      "Type": "Map",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "migrate_fact_tables_3",
+        "States": {
+          "migrate_fact_tables_3": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::glue:startJobRun.sync",
+            "Parameters": {
+              "JobName": "content_model_migration",
+              "Arguments": {
+                "--contentful_model_name.$": "$.content_model"
+              }
+            },
+            "ResultPath": "$.run_result",
+            "End": true
+          }
+        }
+      },
+      "ItemsPath": "$.content_models_list.fact_tables_3",
+      "ItemSelector": {
+        "content_model.$": "$$.Map.Item.Value"
+      },
+      "ResultPath": "$.glue_job_run",
+      "MaxConcurrency": 10,
+      "End": true
+    }
+  }
+}
